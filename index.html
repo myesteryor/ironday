@@ -1,0 +1,1261 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0d0c0a" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<title>铁日 · 力量训练助手</title>
+<script id="auto-designer-preview-contract" type="application/json">
+{
+  "artifactRole": "interactive-homepage",
+  "authoringViewport": { "width": 390, "height": 844 },
+  "deviceAdaptation": {
+    "enabled": true,
+    "strategy": "responsive",
+    "supportedDevices": ["desktop", "tablet", "mobile"]
+  },
+  "breakpoints": { "mobileMax": 767, "tabletMin": 768, "tabletMax": 1023, "desktopMin": 1024 },
+  "defaultDevice": "canvas"
+}
+</script>
+<style>
+  :root {
+    --bg: #0d0c0a;
+    --bg-lift: #14120f;
+    --surface: rgba(255, 255, 255, 0.04);
+    --surface-2: rgba(255, 255, 255, 0.08);
+    --fg: #f1ede6;
+    --muted: #a89f92;
+    --faint: #7a7368;
+    --border: rgba(255, 255, 255, 0.09);
+    --border-soft: rgba(255, 255, 255, 0.05);
+    --accent: #ff6a3d;
+    --accent-bright: #ff8a5f;
+    --accent-soft: rgba(255, 106, 61, 0.14);
+    --on-accent: #1c0d05;
+    --success: #4cc486;
+    --success-soft: rgba(76, 196, 134, 0.14);
+
+    --font-display: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'SimSun', serif;
+    --font-body: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, Menlo, monospace;
+
+    --fs-h1: 27px;
+    --fs-h2: 19px;
+    --fs-h3: 16px;
+    --fs-body: 15px;
+    --fs-meta: 12px;
+
+    --radius-card: 16px;
+    --radius-pill: 999px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  @media (min-width: 768px) {
+    body {
+      background:
+        radial-gradient(70% 60% at 50% 0%, rgba(255, 106, 61, 0.07) 0%, var(--bg) 60%);
+      display: grid;
+      place-items: center;
+    }
+  }
+
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 2px; border-radius: 6px; }
+
+  /* ─── app shell ─────────────────────────────────────────── */
+  .app {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100dvh;
+    background: var(--bg);
+    overflow: hidden;
+  }
+  @media (min-width: 768px) {
+    .app {
+      width: min(430px, 94vw);
+      height: min(880px, 94vh);
+      border-radius: 36px;
+      border: 1px solid var(--border);
+      box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.7);
+    }
+  }
+
+  .topbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(env(safe-area-inset-top, 0px) + 14px) 20px 10px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .brand { display: flex; align-items: baseline; gap: 8px; }
+  .brand .zh { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.12em; }
+  .brand .en {
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--faint);
+  }
+  .streak-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-pill);
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.05em; color: var(--muted);
+  }
+  .streak-chip svg { width: 13px; height: 13px; stroke: var(--accent-bright); fill: none; stroke-width: 1.8; }
+  .streak-chip .n { color: var(--fg); }
+
+  main.view {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  }
+  main.view::-webkit-scrollbar { display: none; }
+
+  /* ─── tab bar ───────────────────────────────────────────── */
+  .tabbar {
+    flex: 0 0 auto;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--border-soft);
+    background: rgba(20, 18, 15, 0.92);
+    backdrop-filter: blur(16px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 10px 0 8px; min-height: 52px;
+    color: var(--faint); font-size: 10px; letter-spacing: 0.08em;
+  }
+  .tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+  .tab[aria-selected="true"] { color: var(--accent-bright); }
+  .tab[aria-selected="true"] svg { stroke-width: 2; }
+
+  /* ─── typography helpers ────────────────────────────────── */
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--faint); margin: 14px 0 6px;
+  }
+  h1.day-title {
+    font-family: var(--font-display); font-size: var(--fs-h1); font-weight: 600;
+    letter-spacing: 0.04em; line-height: 1.15; margin: 0;
+  }
+  .nudge { color: var(--muted); font-size: 13.5px; margin: 8px 0 0; line-height: 1.55; }
+  .meta { font-family: var(--font-mono); font-size: var(--fs-meta); color: var(--muted); }
+  .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  /* ─── week strip ────────────────────────────────────────── */
+  .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 18px 0 6px; }
+  .wday { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0; }
+  .wday .lbl { font-size: 11px; color: var(--faint); letter-spacing: 0.06em; }
+  .wday .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 1.5px solid var(--border); background: transparent;
+  }
+  .wday.done .dot { background: var(--success); border-color: var(--success); }
+  .wday.today .dot { border-color: var(--accent-bright); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .wday .tag {
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em;
+    color: var(--muted); min-height: 12px;
+  }
+
+  /* ─── cards ─────────────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 16px;
+  }
+
+  .progress-wrap { margin-top: 14px; }
+  .progress-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .progress-row .cap { font-size: 12.5px; color: var(--muted); letter-spacing: 0.02em; }
+  .progress-row .val { font-family: var(--font-mono); font-size: 13px; }
+  .progress { height: 6px; background: var(--surface-2); border-radius: var(--radius-pill); overflow: hidden; }
+  .progress > span { display: block; height: 100%; background: var(--accent); border-radius: inherit; transition: width 0.3s cubic-bezier(0.2, 0, 0, 1); }
+  .progress.full > span { background: var(--success); }
+
+  /* warmup */
+  .warmup { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+  .warmup .ic {
+    flex: 0 0 40px; width: 40px; height: 40px; border-radius: 12px;
+    background: var(--accent-soft); display: grid; place-items: center;
+  }
+  .warmup .ic svg { width: 18px; height: 18px; stroke: var(--accent-bright); fill: none; stroke-width: 1.8; }
+  .warmup .body { flex: 1; min-width: 0; }
+  .warmup .t { font-size: 14px; font-weight: 600; }
+  .warmup .s { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 2px; letter-spacing: 0.04em; }
+  .warmup .go {
+    flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 14px; border-radius: var(--radius-pill);
+    border: 1px solid var(--border); font-size: 12.5px; font-weight: 600;
+    text-decoration: none; letter-spacing: 0.02em;
+  }
+  .warmup .go svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+  /* day switch chips */
+  .day-switch { display: flex; gap: 8px; margin-top: 18px; }
+  .chip {
+    position: relative;
+    padding: 9px 16px; border-radius: var(--radius-pill);
+    border: 1px solid var(--border); color: var(--muted);
+    font-size: 13px; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .chip[aria-pressed="true"] { background: var(--surface-2); color: var(--fg); border-color: rgba(255,255,255,0.16); }
+  .chip .badge {
+    position: absolute; top: -7px; right: 6px;
+    font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.1em;
+    padding: 1px 6px; border-radius: var(--radius-pill);
+    background: var(--accent-soft); color: var(--accent-bright);
+  }
+
+  /* ─── exercise rows ─────────────────────────────────────── */
+  .ex-list { margin-top: 6px; }
+  .ex { border-bottom: 1px solid var(--border-soft); }
+  .ex-row {
+    display: grid; grid-template-columns: 44px 1fr 44px; align-items: center;
+    gap: 6px; width: 100%; text-align: left; min-height: 64px;
+  }
+  .ex-check {
+    width: 44px; height: 44px; display: grid; place-items: center;
+  }
+  .ex-check .ring {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 1.8px solid var(--faint);
+    display: grid; place-items: center;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .ex-check .ring svg { width: 14px; height: 14px; stroke: var(--on-accent); stroke-width: 2.6; fill: none; opacity: 0; }
+  .ex.done .ex-check .ring { background: var(--success); border-color: var(--success); }
+  .ex.done .ex-check .ring svg { opacity: 1; }
+  .ex-main { min-width: 0; }
+  .ex-name { font-size: 15px; font-weight: 600; letter-spacing: 0.01em; line-height: 1.3; }
+  .ex.done .ex-name { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.25); text-decoration-thickness: 1px; }
+  .ex-sub { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); margin-top: 3px; letter-spacing: 0.03em; }
+  .ex-sub .last { color: var(--accent-bright); }
+  .ex-video {
+    width: 44px; height: 44px; display: grid; place-items: center;
+    border-radius: 12px; text-decoration: none;
+  }
+  .ex-video svg { width: 20px; height: 20px; stroke: var(--muted); fill: none; stroke-width: 1.7; }
+  .ex-video:active svg, .ex-video:hover svg { stroke: var(--accent-bright); }
+
+  .ex-panel { display: none; padding: 2px 0 16px 50px; }
+  .ex.open .ex-panel { display: block; }
+  .ex-note { font-size: 12.5px; color: var(--muted); margin: 0 0 10px; line-height: 1.5; }
+  .field label { display: block; font-size: 11.5px; color: var(--faint); letter-spacing: 0.06em; margin-bottom: 6px; font-family: var(--font-mono); }
+  .field input {
+    width: 100%; padding: 10px 12px;
+    background: var(--bg-lift); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--fg); font: inherit; font-size: 14px;
+  }
+  .field input:focus-visible { outline: 2px solid var(--accent-bright); outline-offset: 1px; }
+  .panel-link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-size: 12.5px; color: var(--muted);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding-bottom: 2px;
+  }
+
+  /* ─── buttons ───────────────────────────────────────────── */
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; min-height: 50px; margin-top: 20px;
+    border-radius: 14px; font-size: 15px; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .btn-primary { background: var(--accent); color: var(--on-accent); }
+  .btn-primary:active { transform: scale(0.985); }
+  .btn-ghost { border: 1px solid var(--border); color: var(--fg); }
+  .btn-success { background: var(--success-soft); color: var(--success); border: 1px solid rgba(76,196,134,0.35); }
+  .btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+  /* ─── rest timer chip ───────────────────────────────────── */
+  .timer {
+    position: absolute; left: 16px; right: 16px; bottom: 74px; z-index: 20;
+    display: none; align-items: center; gap: 12px;
+    padding: 12px 14px; border-radius: 16px;
+    background: #1b1815; border: 1px solid var(--border);
+    box-shadow: 0 16px 40px -12px rgba(0,0,0,0.7);
+  }
+  .timer.on { display: flex; }
+  .timer .t-num { font-family: var(--font-mono); font-size: 22px; letter-spacing: 0.04em; min-width: 74px; }
+  .timer .t-cap { flex: 1; font-size: 12px; color: var(--muted); line-height: 1.4; }
+  .timer .t-btn {
+    padding: 8px 12px; border-radius: var(--radius-pill);
+    border: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--fg);
+  }
+  .timer .t-close { width: 34px; height: 34px; display: grid; place-items: center; }
+  .timer .t-close svg { width: 15px; height: 15px; stroke: var(--muted); stroke-width: 2; fill: none; }
+
+  /* ─── toast ─────────────────────────────────────────────── */
+  .toast {
+    position: absolute; left: 50%; bottom: 140px; transform: translateX(-50%) translateY(8px);
+    z-index: 50; max-width: 86%;
+    padding: 10px 18px; border-radius: var(--radius-pill);
+    background: #221e19; border: 1px solid var(--border);
+    font-size: 13px; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .storage-warn {
+    display: none; margin: 12px 0 0; padding: 10px 14px;
+    border: 1px solid rgba(255, 106, 61, 0.4); border-radius: 12px;
+    font-size: 12.5px; color: var(--accent-bright); line-height: 1.5;
+  }
+  .storage-warn.show { display: block; }
+
+  /* ─── 沉浸模式与视频弹层 ──────────────────────────── */
+  .top-right { display: flex; align-items: center; gap: 8px; }
+  .immersive-btn {
+    width: 38px; height: 38px; border-radius: 50%;
+    border: 1px solid var(--border); display: grid; place-items: center;
+  }
+  .immersive-btn svg { width: 16px; height: 16px; stroke: var(--muted); fill: none; stroke-width: 1.8; }
+  .immersive-btn[aria-pressed="true"] { background: var(--accent-soft); border-color: rgba(255, 106, 61, 0.4); }
+  .immersive-btn[aria-pressed="true"] svg { stroke: var(--accent-bright); }
+
+  .vmodal { position: absolute; inset: 0; z-index: 40; display: none; }
+  .vmodal.on { display: block; }
+  .vm-backdrop { position: absolute; inset: 0; background: rgba(5, 4, 3, 0.78); backdrop-filter: blur(3px); }
+  .vm-sheet {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: #171310; border-top: 1px solid var(--border);
+    border-radius: 22px 22px 0 0;
+    padding: 14px 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+    max-height: 92%; overflow-y: auto;
+    animation: sheetUp 0.28s cubic-bezier(0.2, 0, 0, 1);
+  }
+  @keyframes sheetUp { from { transform: translateY(48px); opacity: 0; } }
+  .vm-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .vm-title { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.04em; }
+  .vm-sub { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 3px; letter-spacing: 0.05em; }
+  .vm-close { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); display: grid; place-items: center; }
+  .vm-close svg { width: 15px; height: 15px; stroke: var(--muted); stroke-width: 2; fill: none; }
+  .vm-player {
+    position: relative; width: 100%; aspect-ratio: 16 / 9;
+    background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+  }
+  .vm-player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .vm-empty {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 13px; text-align: center; padding: 0 18px; line-height: 1.6;
+  }
+  .vm-actions { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
+  .vm-a {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    min-height: 34px; padding: 0 14px; border-radius: var(--radius-pill);
+    font-size: 12px; font-weight: 600; text-decoration: none; letter-spacing: 0.02em;
+  }
+  .vm-a.primary { background: var(--accent); color: var(--on-accent); }
+  .vm-a.web { border: 1px solid var(--border); color: var(--muted); }
+  .vm-fix { margin-top: 14px; border-top: 1px solid var(--border-soft); padding-top: 10px; }
+  .vm-fix summary {
+    cursor: pointer; font-size: 13px; color: var(--muted); font-weight: 600;
+    list-style: none; display: flex; align-items: center; gap: 6px; min-height: 34px;
+  }
+  .vm-fix summary::-webkit-details-marker { display: none; }
+  .vm-fix summary::before {
+    content: ''; width: 7px; height: 7px; border-right: 1.6px solid var(--faint); border-bottom: 1.6px solid var(--faint);
+    transform: rotate(-45deg); transition: transform 0.15s ease;
+  }
+  .vm-fix[open] summary::before { transform: rotate(45deg); }
+  .vm-fix .row2 { display: flex; gap: 8px; margin-top: 6px; }
+  .vm-fix input {
+    flex: 1; min-width: 0; padding: 10px 12px;
+    background: var(--bg-lift); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--fg); font: inherit; font-size: 13px;
+  }
+  .vm-err { display: none; font-size: 12px; color: #ff7d6e; margin-top: 6px; }
+  .vm-err.show { display: block; }
+  .vm-hint { font-size: 11.5px; color: var(--faint); margin: 8px 0 0; line-height: 1.55; }
+
+  /* ─── plan view ─────────────────────────────────────────── */
+  .seg-group {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+    padding: 4px; margin: 16px 0 4px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  }
+  .seg {
+    min-height: 42px; border-radius: 10px; font-size: 14px; font-weight: 600;
+    color: var(--muted); letter-spacing: 0.02em;
+  }
+  .seg[aria-pressed="true"] { background: var(--surface-2); color: var(--fg); }
+
+  .plan-card { margin-top: 12px; padding: 14px 16px; }
+  .plan-head { display: flex; align-items: center; gap: 10px; }
+  .plan-idx {
+    flex: 0 0 auto; font-family: var(--font-mono); font-size: 11px; color: var(--faint);
+    width: 24px; letter-spacing: 0.05em;
+  }
+  .plan-body { flex: 1; min-width: 0; }
+  .plan-name { font-size: 15px; font-weight: 600; }
+  .plan-meta { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); margin-top: 3px; letter-spacing: 0.03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .plan-edit {
+    flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-items: center;
+    border-radius: 10px;
+  }
+  .plan-edit svg { width: 17px; height: 17px; stroke: var(--muted); fill: none; stroke-width: 1.7; }
+  .plan-edit:hover svg, .plan-edit[aria-expanded="true"] svg { stroke: var(--accent-bright); }
+  .plan-form { display: none; margin: 4px 0 6px 34px; }
+  .plan-card.open .plan-form { display: block; }
+  .plan-form .field { margin-bottom: 10px; }
+  .plan-form .err { display: none; font-size: 12px; color: #ff7d6e; margin-top: 5px; }
+  .plan-form .err.show { display: block; }
+  .form-actions { display: flex; gap: 8px; margin-top: 2px; }
+  .mini-btn {
+    padding: 9px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 600;
+    border: 1px solid var(--border); color: var(--fg); min-height: 38px;
+  }
+  .mini-btn.save { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .plan-video-link {
+    display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 0 34px;
+    font-size: 12px; color: var(--muted); text-decoration: none;
+    border-bottom: 1px dashed rgba(255,255,255,0.25); padding-bottom: 1px;
+  }
+  .plan-video-link svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .plan-note { font-size: 12.5px; color: var(--faint); line-height: 1.6; margin: 18px 4px 0; }
+  .plan-note strong { color: var(--muted); font-weight: 600; }
+
+  /* ─── records view ──────────────────────────────────────── */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+  .stat-card { padding: 14px 8px; text-align: center; }
+  .stat-card .v { font-family: var(--font-mono); font-size: 24px; letter-spacing: -0.01em; }
+  .stat-card .k { font-size: 11px; color: var(--faint); margin-top: 4px; letter-spacing: 0.08em; }
+  .sec-cap { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); margin: 24px 0 6px; }
+  .hist-row { display: flex; align-items: center; gap: 12px; padding: 13px 2px; border-bottom: 1px solid var(--border-soft); }
+  .hist-date { font-family: var(--font-mono); font-size: 12px; color: var(--muted); min-width: 84px; }
+  .hist-name { flex: 1; font-size: 14px; font-weight: 600; }
+  .hist-count { font-family: var(--font-mono); font-size: 12px; color: var(--success); }
+  .weight-row { display: flex; align-items: baseline; gap: 10px; padding: 11px 2px; border-bottom: 1px solid var(--border-soft); }
+  .weight-name { flex: 1; font-size: 14px; }
+  .weight-val { font-family: var(--font-mono); font-size: 13px; color: var(--accent-bright); }
+  .weight-date { font-family: var(--font-mono); font-size: 11px; color: var(--faint); min-width: 44px; text-align: right; }
+
+  .empty {
+    margin-top: 24px; padding: 32px 22px; text-align: center;
+    border: 1px dashed var(--border); border-radius: var(--radius-card);
+  }
+  .empty h3 { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.06em; margin: 0 0 8px; }
+  .empty p { font-size: 13px; color: var(--muted); margin: 0 0 18px; line-height: 1.6; }
+  .empty .btn { margin-top: 0; min-height: 44px; max-width: 220px; margin-inline: auto; }
+
+  .rest-card { text-align: center; padding: 26px 20px; margin-top: 18px; }
+  .rest-card .big { font-family: var(--font-display); font-size: 20px; letter-spacing: 0.08em; margin: 0 0 8px; }
+  .rest-card p { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+  .rest-actions { display: flex; gap: 10px; }
+  .rest-actions .btn { margin-top: 0; min-height: 44px; font-size: 14px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar" data-od-id="topbar">
+    <div class="brand"><span class="zh">铁日</span><span class="en">Iron Day</span></div>
+    <div class="top-right">
+      <div class="streak-chip" id="streakChip" title="连续完成整周训练的周数 · 点击启动组间休息计时">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 4-3 5.5-3 9a3 3 0 0 0 6 0c0-1.5-.8-2.6-.8-2.6S17 10 17 13.5A5.5 5.5 0 0 1 6 13c0-5 5-6 6-11z"/></svg>
+        <span>连续 <span class="n num" id="streakN">0</span> 周</span>
+      </div>
+      <button class="immersive-btn" id="immersiveBtn" aria-pressed="false" aria-label="沉浸模式：全屏并保持屏幕常亮" title="沉浸模式">
+        <svg id="icoExpand" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        <svg id="icoShrink" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M3 8h3a2 2 0 0 0 2-2V3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M21 16h-3a2 2 0 0 0-2 2v3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══ 今日 ═══ -->
+  <main class="view" id="view-today" role="tabpanel" aria-label="今日训练" data-od-id="view-today">
+    <div class="storage-warn" id="storageWarn">当前环境不支持本地保存，刷新后记录不会保留。建议在手机浏览器中直接打开本文件使用。</div>
+
+    <p class="eyebrow" id="todayDate">—</p>
+    <h1 class="day-title" id="dayTitle">力量 A 日</h1>
+    <p class="nudge" id="nudge">—</p>
+
+    <div class="week" id="weekStrip" aria-label="本周训练完成情况"></div>
+
+    <div class="day-switch" id="daySwitch">
+      <button class="chip" id="chipA" aria-pressed="true">力量 A<span class="badge" id="badgeA" hidden>今日</span></button>
+      <button class="chip" id="chipB" aria-pressed="false">力量 B<span class="badge" id="badgeB" hidden>今日</span></button>
+    </div>
+
+    <section class="card progress-wrap" data-od-id="progress" style="margin-top:16px;">
+      <div class="progress-row">
+        <span class="cap" id="progCap">今日进度</span>
+        <span class="val num" id="progVal">0 / 7</span>
+      </div>
+      <div class="progress" id="progBar"><span style="width:0%"></span></div>
+    </section>
+
+    <section class="card warmup" data-od-id="warmup">
+      <div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M10 8.5v7l5.5-3.5z" fill="currentColor" stroke="none"/></svg></div>
+      <div class="body">
+        <div class="t" id="warmName">热身</div>
+        <div class="s" id="warmDur">—</div>
+      </div>
+      <button class="go" id="warmBtn" data-act="video" data-id="warmA">看视频
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>
+      </button>
+    </section>
+
+    <section class="ex-list" id="exList" data-od-id="exercises"></section>
+
+    <button class="btn btn-primary" id="finishBtn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
+      <span id="finishLabel">完成今日训练</span>
+    </button>
+  </main>
+
+  <!-- ═══ 计划 ═══ -->
+  <main class="view" id="view-plan" role="tabpanel" aria-label="训练计划" hidden data-od-id="view-plan">
+    <p class="eyebrow">每周两练 · 力量 A 与力量 B</p>
+
+    <div class="seg-group" role="group" aria-label="切换训练日">
+      <button class="seg" id="planSegA" aria-pressed="true">力量 A · 周二</button>
+      <button class="seg" id="planSegB" aria-pressed="false">力量 B · 周五</button>
+    </div>
+
+    <section class="card plan-card" id="planWarm" data-od-id="plan-warmup"></section>
+    <div id="planList"></div>
+
+    <p class="plan-note">
+      <strong>视频播放说明：</strong>点任意「播放视频」会在应用内直接打开 B 站播放器；若已安装手机 B 站，也可一键跳进 App。想看你收藏的那条视频，在弹层里粘贴一次链接（含 BV 号）并保存，之后所有入口都会固定到它。训练目标（组数 × 次数）也可以在这里修改。所有数据只保存在你自己的手机浏览器里。
+    </p>
+  </main>
+
+  <!-- ═══ 记录 ═══ -->
+  <main class="view" id="view-records" role="tabpanel" aria-label="训练记录" hidden data-od-id="view-records">
+    <p class="eyebrow">训练记录</p>
+
+    <div class="stat-grid">
+      <div class="card stat-card"><div class="v num" id="statStreak">0</div><div class="k">连续周数</div></div>
+      <div class="card stat-card"><div class="v num" id="statTotal">0</div><div class="k">累计训练</div></div>
+      <div class="card stat-card"><div class="v num" id="statWeek">0/2</div><div class="k">本周进度</div></div>
+    </div>
+
+    <p class="sec-cap">各动作上次重量</p>
+    <div id="weightList"></div>
+
+    <p class="sec-cap">历史训练</p>
+    <div id="histList"></div>
+  </main>
+
+  <div class="vmodal" id="vmodal" role="dialog" aria-modal="true" aria-label="动作视频播放">
+    <div class="vm-backdrop" data-act="vm-close"></div>
+    <div class="vm-sheet">
+      <div class="vm-head">
+        <div>
+          <div class="vm-title" id="vmTitle">视频</div>
+          <div class="vm-sub" id="vmSub">—</div>
+        </div>
+        <button class="vm-close" id="vmClose" data-act="vm-close" aria-label="关闭视频">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div class="vm-player" id="vmPlayer"></div>
+      <div class="vm-actions">
+        <a class="vm-a primary" id="vmApp" href="#">B 站 App 打开</a>
+        <a class="vm-a web" id="vmWeb" href="#" target="_blank" rel="noopener">网页打开</a>
+      </div>
+      <details class="vm-fix" id="vmFixDetails">
+        <summary>固定 / 更换我收藏的视频链接</summary>
+        <div class="row2">
+          <input id="vmUrlInput" type="text" inputmode="url" placeholder="https://www.bilibili.com/video/BV…" aria-label="B站视频链接" />
+          <button class="mini-btn save" data-act="vm-fix">保存</button>
+        </div>
+        <span class="vm-err" id="vmFixErr" role="alert">链接格式不对：需要以 http:// 或 https:// 开头。</span>
+        <p class="vm-hint">支持含 BV 号或 av 号的链接。固定后即可直接内嵌播放；「B 站 App 打开」会带着视频 ID 跳进手机 B 站 App。</p>
+      </details>
+    </div>
+  </div>
+
+  <div class="timer" id="timer" role="timer" aria-label="组间休息计时">
+    <span class="t-num num" id="timerNum">1:30</span>
+    <span class="t-cap" id="timerCap">组间休息 · 起身活动，调整呼吸</span>
+    <button class="t-btn" id="timerToggle">暂停</button>
+    <button class="t-btn" id="timerPlus">+30s</button>
+    <button class="t-close" id="timerClose" aria-label="关闭计时器">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <nav class="tabbar" role="tablist" aria-label="主导航" data-od-id="tabbar">
+    <button class="tab" role="tab" id="tab-today" aria-selected="true" aria-controls="view-today">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg>
+      今日
+    </button>
+    <button class="tab" role="tab" id="tab-plan" aria-selected="false" aria-controls="view-plan">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M4 10.5h16M9 15l2 2 4-4"/></svg>
+      计划
+    </button>
+    <button class="tab" role="tab" id="tab-records" aria-selected="false" aria-controls="view-records">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg>
+      记录
+    </button>
+  </nav>
+</div>
+
+<script>
+'use strict';
+
+/* ───────────────────────── 计划数据 ───────────────────────── */
+const PLAN = {
+  A: {
+    letter: 'A', title: '力量 A 日', subtitle: '下肢 + 推', weekday: 2, weekdayLabel: '周二',
+    warmup: { key: 'warmA', name: '髋关节功能提高训练', dur: '6:57', q: '髋关节功能提高训练 热身' },
+    exercises: [
+      { id: 'a1', name: '高脚杯深蹲',      rx: '4 × 8',     q: '高脚杯深蹲 详解' },
+      { id: 'a2', name: '腿举',            rx: '4 × 10',    q: '倒蹬机 腿举 详解' },
+      { id: 'a3', name: '臀桥',            rx: '4 × 12',    q: '臀桥 教学' },
+      { id: 'a4', name: '坐姿腿弯举',      rx: '3 × 12',    q: '坐姿腿弯举 教学' },
+      { id: 'a5', name: '哑铃卧推',        rx: '4 × 8',     q: '哑铃平板卧推 详解' },
+      { id: 'a6', name: '上斜哑铃推举',    rx: '3 × 10',    q: '上斜哑铃卧推 详解' },
+      { id: 'a7', name: '坐姿肩推',        rx: '4 × 8',     q: '坐姿哑铃推肩 详解' }
+    ]
+  },
+  B: {
+    letter: 'B', title: '力量 B 日', subtitle: '背部 + 拉', weekday: 5, weekdayLabel: '周五',
+    warmup: { key: 'warmB', name: '肩关节灵活性训练', dur: '5:43', q: '肩关节灵活性训练' },
+    exercises: [
+      { id: 'b1', name: '坐姿划船',        rx: '4 × 10',    q: '坐姿划船 详解' },
+      { id: 'b2', name: '高位下拉',        rx: '4 × 10',    q: '高位下拉 详解' },
+      { id: 'b3', name: '哑铃硬拉',        rx: '4 × 8',     q: '哑铃划船 详解',
+        note: '同为髋铰链模式，视频可参考「哑铃划船详解」。' },
+      { id: 'b4', name: '保加利亚分腿蹲',  rx: '3 × 10/侧', q: '保加利亚深蹲 详解' },
+      { id: 'b5', name: '面拉',            rx: '3 × 15',    q: '绳索面拉 详解' },
+      { id: 'b6', name: '平板支撑',        rx: '3 × 45秒',  q: '平板支撑 详解' },
+      { id: 'b7', name: '死虫式',          rx: '3 × 10/侧', q: '死虫式 腰痛自救' }
+    ]
+  }
+};
+const REST_SECONDS = 90;
+
+/* ───────────────────────── 状态与存储 ───────────────────────── */
+const STORE_KEY = 'ironday.v1';
+let storageOk = true;
+let state = { videos: {}, targets: {}, logs: {} };
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state.videos = parsed.videos || {};
+      state.targets = parsed.targets || {};
+      state.logs = parsed.logs || {};
+    }
+  } catch (e) {
+    storageOk = false;
+    const w = document.getElementById('storageWarn');
+    if (w) w.classList.add('show');
+  }
+}
+function saveState() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+  catch (e) {
+    storageOk = false;
+    const w = document.getElementById('storageWarn');
+    if (w) w.classList.add('show');
+  }
+}
+
+/* ───────────────────────── 工具函数 ───────────────────────── */
+const $ = (id) => document.getElementById(id);
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+function dateKey(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function fmtDot(d) { return (d.getMonth() + 1) + '.' + pad2(d.getDate()); }
+function weekDates(d) {
+  const off = (d.getDay() + 6) % 7;
+  const mon = new Date(d); mon.setDate(d.getDate() - off);
+  const out = [];
+  for (let i = 0; i < 7; i++) { const x = new Date(mon); x.setDate(mon.getDate() + i); out.push(x); }
+  return out;
+}
+function dayLetterFor(d) { return d.getDay() === 2 ? 'A' : d.getDay() === 5 ? 'B' : null; }
+function biliSearch(q) { return 'https://search.bilibili.com/all?keyword=' + encodeURIComponent(q); }
+function videoUrl(key, q) {
+  const u = state.videos[key];
+  return (u && /^https?:\/\//i.test(u)) ? u : biliSearch(q);
+}
+
+/* 视频弹层：BV/av 解析、内嵌播放器与 App 深链 */
+const VIDEO_INDEX = {};
+Object.values(PLAN).forEach(p => {
+  VIDEO_INDEX[p.warmup.key] = { name: '热身 · ' + p.warmup.name, q: p.warmup.q };
+  p.exercises.forEach(ex => { VIDEO_INDEX[ex.id] = { name: ex.name, q: ex.q }; });
+});
+function parseVideo(url) {
+  if (!url) return null;
+  let m = url.match(/(BV[0-9A-Za-z]{8,12})/i);
+  if (m) return { bvid: m[1] };
+  m = url.match(/av(\d+)/i);
+  if (m) return { aid: m[1] };
+  return null;
+}
+function playerSrc(v) {
+  const base = 'https://player.bilibili.com/player.html?autoplay=1&high_quality=1&danmaku=0&';
+  return v.bvid ? base + 'bvid=' + v.bvid : base + 'aid=' + v.aid;
+}
+function appHref(key) {
+  const v = parseVideo(state.videos[key]);
+  if (v) return v.bvid ? 'bilibili://video/' + v.bvid : 'bilibili://video/av' + v.aid;
+  return 'bilibili://search?keyword=' + encodeURIComponent(VIDEO_INDEX[key].q);
+}
+function webHref(key) {
+  const v = parseVideo(state.videos[key]);
+  if (v) return v.bvid ? 'https://www.bilibili.com/video/' + v.bvid : 'https://www.bilibili.com/video/av' + v.aid;
+  return biliSearch(VIDEO_INDEX[key].q);
+}
+const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+function todayEntry() {
+  const k = dateKey(new Date());
+  if (!state.logs[k]) state.logs[k] = { day: selDay, done: [], weights: {}, completed: false };
+  return state.logs[k];
+}
+function lastWeightOf(exId) {
+  const keys = Object.keys(state.logs).sort().reverse();
+  for (const k of keys) {
+    const e = state.logs[k];
+    if (e.weights && e.weights[exId]) return { w: e.weights[exId], date: k.slice(5).replace('-', '.') };
+  }
+  return null;
+}
+function rxOf(ex) { return state.targets[ex.id] || ex.rx; }
+
+let toastTimer = null;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+
+/* ───────────────────────── 督促统计 ───────────────────────── */
+function streakWeeks() {
+  const now = new Date();
+  let s = 0;
+  for (let i = 0; i < 104; i++) {
+    const ref = new Date(now); ref.setDate(now.getDate() - 7 * i);
+    const days = weekDates(ref);
+    const done = new Set(days.map(d => {
+      const e = state.logs[dateKey(d)];
+      return (e && e.completed) ? e.day : null;
+    }));
+    if (done.has('A') && done.has('B')) s++;
+    else if (i === 0) continue;
+    else break;
+  }
+  return s;
+}
+function completedThisWeek() {
+  return weekDates(new Date()).filter(d => {
+    const e = state.logs[dateKey(d)];
+    return e && e.completed;
+  }).length;
+}
+function totalCompleted() {
+  return Object.values(state.logs).filter(e => e.completed).length;
+}
+
+/* ───────────────────────── 今日视图 ───────────────────────── */
+let selDay = 'A';
+let openEx = null;
+
+function nudgeText() {
+  const now = new Date();
+  const letter = dayLetterFor(now);
+  const entry = state.logs[dateKey(now)];
+  if (letter) {
+    if (entry && entry.completed) return '今日训练已完成 · 记得补充蛋白质，睡够 7 小时。';
+    const n = (entry && entry.day === letter) ? entry.done.length : 0;
+    if (n > 0) return '进行中 · 已完成 ' + n + ' 个动作，接着来。';
+    return letter === 'A'
+      ? '腿部与推力日 · 先看热身视频，再从高脚杯深蹲开始。'
+      : '背部与拉力日 · 肩关节热身后，从坐姿划船开始。';
+  }
+  const next = (now.getDay() < 2 || now.getDay() > 5) ? 'A（周二）' : (now.getDay() < 5 ? 'B（周五）' : 'A（下周二）');
+  return '休息日 · 下一次训练是力量 ' + next + '。睡眠与饮食同样是训练的一部分。';
+}
+
+function renderToday() {
+  const now = new Date();
+  const wk = ['日', '一', '二', '三', '四', '五', '六'][now.getDay()];
+  $('todayDate').textContent = now.getFullYear() + '.' + pad2(now.getMonth() + 1) + '.' + pad2(now.getDate()) + ' · 星期' + wk;
+
+  const plan = PLAN[selDay];
+  $('dayTitle').textContent = plan.title + ' · ' + plan.subtitle;
+  $('nudge').textContent = nudgeText();
+
+  // 周条
+  const strip = $('weekStrip');
+  strip.innerHTML = '';
+  const labels = ['一', '二', '三', '四', '五', '六', '日'];
+  weekDates(now).forEach((d, i) => {
+    const e = state.logs[dateKey(d)];
+    const div = document.createElement('div');
+    div.className = 'wday' + (e && e.completed ? ' done' : '') + (dateKey(d) === dateKey(now) ? ' today' : '');
+    div.innerHTML = '<span class="lbl">' + labels[i] + '</span><span class="dot"></span>'
+      + '<span class="tag">' + (dayLetterFor(d) ? dayLetterFor(d) : '') + '</span>';
+    strip.appendChild(div);
+  });
+
+  // 今日徽标
+  $('badgeA').hidden = dayLetterFor(now) !== 'A';
+  $('badgeB').hidden = dayLetterFor(now) !== 'B';
+  $('chipA').setAttribute('aria-pressed', selDay === 'A');
+  $('chipB').setAttribute('aria-pressed', selDay === 'B');
+
+  // 进度
+  const entry = state.logs[dateKey(now)];
+  const doneSet = new Set(entry && entry.day === selDay ? entry.done : []);
+  const total = plan.exercises.length;
+  $('progCap').textContent = plan.title + '进度';
+  $('progVal').textContent = doneSet.size + ' / ' + total;
+  const bar = $('progBar');
+  bar.classList.toggle('full', doneSet.size === total);
+  bar.firstElementChild.style.width = (doneSet.size / total * 100) + '%';
+
+  // 热身
+  $('warmName').textContent = '热身 · ' + plan.warmup.name;
+  $('warmDur').textContent = plan.weekdayLabel + ' · 时长 ' + plan.warmup.dur + ' · ' + (state.videos[plan.warmup.key] ? '已固定视频' : 'B 站搜索');
+  $('warmBtn').dataset.id = plan.warmup.key;
+
+  // 动作列表
+  const list = $('exList');
+  list.innerHTML = '';
+  plan.exercises.forEach((ex, i) => {
+    const done = doneSet.has(ex.id);
+    const last = lastWeightOf(ex.id);
+    const weightNow = (entry && entry.day === selDay && entry.weights && entry.weights[ex.id]) || '';
+    const row = document.createElement('div');
+    row.className = 'ex' + (done ? ' done' : '') + (openEx === ex.id ? ' open' : '');
+    row.innerHTML =
+      '<div class="ex-row">' +
+        '<button class="ex-check" data-act="check" data-id="' + ex.id + '" aria-pressed="' + done + '" aria-label="标记' + esc(ex.name) + (done ? '未完成' : '完成') + '">' +
+          '<span class="ring"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg></span>' +
+        '</button>' +
+        '<button class="ex-main" data-act="expand" data-id="' + ex.id + '" aria-expanded="' + (openEx === ex.id) + '">' +
+          '<span class="ex-name">' + esc(ex.name) + '</span>' +
+          '<span class="ex-sub">' + esc(rxOf(ex)) +
+            (last ? ' · <span class="last">上次 ' + esc(last.w) + 'kg</span>' : '') + '</span>' +
+        '</button>' +
+        '<button class="ex-video" data-act="video" data-id="' + ex.id + '" aria-label="播放视频：' + esc(ex.name) + (state.videos[ex.id] ? '（已固定）' : '') + '">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="M10.5 9.5v5l4.5-2.5z" fill="currentColor" stroke="none"/></svg>' +
+        '</button>' +
+      '</div>' +
+      '<div class="ex-panel">' +
+        (ex.note ? '<p class="ex-note">' + esc(ex.note) + '</p>' : '') +
+        '<div class="field"><label for="w-' + ex.id + '">本次重量（kg，可留空）</label>' +
+        '<input id="w-' + ex.id + '" type="text" inputmode="decimal" data-act="weight" data-id="' + ex.id + '" value="' + esc(weightNow) + '" placeholder="如 20" /></div>' +
+        '<button class="panel-link" data-act="video" data-id="' + ex.id + '">播放「' + esc(ex.name) + '」动作详解视频</button>' +
+      '</div>';
+    list.appendChild(row);
+  });
+
+  // 完成按钮
+  const entryToday = state.logs[dateKey(now)];
+  const thisDone = entryToday && entryToday.completed && entryToday.day === selDay;
+  const btn = $('finishBtn');
+  btn.className = 'btn ' + (thisDone ? 'btn-success' : 'btn-primary');
+  $('finishLabel').textContent = thisDone
+    ? '已完成本次训练 · 点击撤销'
+    : (doneSet.size === total ? '全部完成 · 记录本次训练' : '完成今日训练');
+}
+
+/* 今日视图事件 */
+$('exList').addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-act]');
+  if (!el || el.dataset.act === 'weight') return;
+  const id = el.dataset.id;
+  if (el.dataset.act === 'expand') {
+    openEx = (openEx === id) ? null : id;
+    renderToday();
+  } else if (el.dataset.act === 'check') {
+    const entry = todayEntry();
+    entry.day = selDay;
+    const i = entry.done.indexOf(id);
+    if (i >= 0) entry.done.splice(i, 1); else { entry.done.push(id); buzz(15); }
+    saveState();
+    renderToday(); renderRecords();
+    if (entry.done.length === PLAN[selDay].exercises.length) toast('7 个动作全部完成，按下方的按钮记录本次训练');
+  }
+});
+$('exList').addEventListener('change', (ev) => {
+  const el = ev.target;
+  if (el.dataset.act !== 'weight') return;
+  const entry = todayEntry();
+  entry.day = selDay;
+  const v = el.value.trim();
+  if (v) entry.weights[el.dataset.id] = v; else delete entry.weights[el.dataset.id];
+  saveState();
+  toast('重量已记录');
+  renderToday(); renderRecords();
+});
+$('chipA').addEventListener('click', () => { selDay = 'A'; openEx = null; renderToday(); });
+$('chipB').addEventListener('click', () => { selDay = 'B'; openEx = null; renderToday(); });
+$('finishBtn').addEventListener('click', () => {
+  const entry = todayEntry();
+  entry.day = selDay;
+  if (entry.completed && entry.day === selDay) {
+    entry.completed = false;
+    saveState(); renderToday(); renderRecords();
+    toast('已撤销本次训练记录');
+  } else {
+    entry.completed = true;
+    saveState(); renderToday(); renderRecords(); renderWeekTop();
+    buzz([30, 60, 30]);
+    toast('本次训练已记录 · 拉伸放松，明天见');
+  }
+});
+
+/* ───────────────────────── 计划视图 ───────────────────────── */
+let planSel = 'A';
+
+function renderPlan() {
+  $('planSegA').setAttribute('aria-pressed', planSel === 'A');
+  $('planSegB').setAttribute('aria-pressed', planSel === 'B');
+  const plan = PLAN[planSel];
+
+  const warm = $('planWarm');
+  const customWarm = state.videos[plan.warmup.key];
+  warm.className = 'card plan-card' + (planFormOpen === plan.warmup.key ? ' open' : '');
+  warm.innerHTML =
+    '<div class="plan-head">' +
+      '<span class="plan-idx">热身</span>' +
+      '<div class="plan-body"><div class="plan-name">' + esc(plan.warmup.name) + '</div>' +
+      '<div class="plan-meta">时长 ' + esc(plan.warmup.dur) + ' · ' + (customWarm ? '已固定视频' : 'B 站搜索') + '</div></div>' +
+      '<button class="plan-edit" data-act="edit" data-id="' + plan.warmup.key + '" aria-expanded="' + (planFormOpen === plan.warmup.key) + '" aria-label="编辑热身设置">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M13.5 6.5l3 3"/></svg>' +
+      '</button>' +
+    '</div>' +
+    '<div class="plan-form" data-form="' + plan.warmup.key + '">' + formHTML(plan.warmup.key, '', customWarm || '') + '</div>' +
+    '<button class="plan-video-link" data-act="video" data-id="' + plan.warmup.key + '">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>播放视频</button>';
+
+  const list = $('planList');
+  list.innerHTML = '';
+  plan.exercises.forEach((ex, i) => {
+    const custom = state.videos[ex.id];
+    const card = document.createElement('section');
+    card.className = 'card plan-card' + (planFormOpen === ex.id ? ' open' : '');
+    card.setAttribute('data-od-id', 'plan-' + ex.id);
+    card.innerHTML =
+      '<div class="plan-head">' +
+        '<span class="plan-idx">' + pad2(i + 1) + '</span>' +
+        '<div class="plan-body"><div class="plan-name">' + esc(ex.name) + '</div>' +
+        '<div class="plan-meta">' + esc(rxOf(ex)) + ' · ' + (custom ? '已固定视频' : 'B 站搜索') + '</div></div>' +
+        '<button class="plan-edit" data-act="edit" data-id="' + ex.id + '" aria-expanded="' + (planFormOpen === ex.id) + '" aria-label="编辑' + esc(ex.name) + '设置">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M13.5 6.5l3 3"/></svg>' +
+        '</button>' +
+      '</div>' +
+      '<div class="plan-form" data-form="' + ex.id + '">' + formHTML(ex.id, rxOf(ex), custom || '') + '</div>' +
+      '<button class="plan-video-link" data-act="video" data-id="' + ex.id + '">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>播放视频</button>';
+    list.appendChild(card);
+  });
+}
+
+function formHTML(id, rx, url) {
+  return '<div class="field"><label for="rx-' + id + '">训练目标（组数 × 次数）</label>' +
+      '<input id="rx-' + id + '" data-act="rx" value="' + esc(rx) + '" placeholder="如 4 × 8" /></div>' +
+    '<div class="field"><label for="url-' + id + '">B 站视频链接（留空则默认搜索）</label>' +
+      '<input id="url-' + id + '" data-act="url" value="' + esc(url) + '" placeholder="https://www.bilibili.com/video/BV…" />' +
+      '<span class="err" role="alert">链接格式不对：需要以 http:// 或 https:// 开头。</span></div>' +
+    '<div class="form-actions">' +
+      '<button class="mini-btn save" data-act="save" data-id="' + id + '">保存</button>' +
+      '<button class="mini-btn" data-act="reset" data-id="' + id + '">恢复默认搜索</button>' +
+    '</div>';
+}
+
+let planFormOpen = null;
+document.getElementById('view-plan').addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-act]');
+  if (!el) return;
+  const id = el.dataset.id;
+  const plan = PLAN[planSel];
+  const allKeys = ['warmA', 'warmB'].concat(PLAN.A.exercises.map(e => e.id), PLAN.B.exercises.map(e => e.id));
+  if (el.dataset.act === 'edit') {
+    planFormOpen = (planFormOpen === id) ? null : id;
+    renderPlan();
+  } else if (el.dataset.act === 'save') {
+    const form = document.querySelector('[data-form="' + id + '"]');
+    const rxIn = form.querySelector('[data-act="rx"]');
+    const urlIn = form.querySelector('[data-act="url"]');
+    const err = form.querySelector('.err');
+    const url = urlIn.value.trim();
+    if (url && !/^https?:\/\/\S+$/i.test(url)) { err.classList.add('show'); urlIn.setAttribute('aria-invalid', 'true'); return; }
+    err.classList.remove('show');
+    const rx = rxIn.value.trim();
+    if (rx) state.targets[id] = rx; else delete state.targets[id];
+    if (url) state.videos[id] = url; else delete state.videos[id];
+    saveState();
+    planFormOpen = null;
+    renderPlan(); renderToday();
+    toast('已保存');
+  } else if (el.dataset.act === 'reset') {
+    delete state.videos[id];
+    saveState();
+    renderPlan(); renderToday();
+    toast('已恢复为 B 站搜索');
+  }
+});
+$('planSegA').addEventListener('click', () => { planSel = 'A'; renderPlan(); });
+$('planSegB').addEventListener('click', () => { planSel = 'B'; renderPlan(); });
+
+/* ───────────────────────── 记录视图 ───────────────────────── */
+function renderWeekTop() { renderStreak(); }
+function renderStreak() {
+  $('streakN').textContent = streakWeeks();
+}
+function renderRecords() {
+  renderStreak();
+  $('statStreak').textContent = streakWeeks();
+  $('statTotal').textContent = totalCompleted();
+  $('statWeek').textContent = completedThisWeek() + '/2';
+
+  // 历史训练
+  const hist = $('histList');
+  const entries = Object.keys(state.logs)
+    .filter(k => state.logs[k].completed)
+    .sort()
+    .reverse()
+    .slice(0, 30);
+  if (!entries.length) {
+    hist.innerHTML =
+      '<div class="empty"><h3>还没有训练记录</h3>' +
+      '<p>完成今天的训练后，这里会记下你的每一次进步。<br>坚持周二与周五，四周就能看到变化。</p>' +
+      '<button class="btn btn-ghost" data-goto="today">去今日训练</button></div>';
+  } else {
+    const wk = ['日', '一', '二', '三', '四', '五', '六'];
+    hist.innerHTML = entries.map(k => {
+      const e = state.logs[k];
+      const d = new Date(k + 'T00:00:00');
+      const p = PLAN[e.day];
+      const n = e.done ? e.done.length : 0;
+      const total = p ? p.exercises.length : 7;
+      return '<div class="hist-row"><span class="hist-date">' + k.slice(5).replace('-', '.') + ' 周' + wk[d.getDay()] + '</span>' +
+        '<span class="hist-name">' + (p ? esc(p.title) : '训练') + '</span>' +
+        '<span class="hist-count num">' + n + '/' + total + '</span></div>';
+    }).join('');
+  }
+
+  // 各动作上次重量
+  const wl = $('weightList');
+  const rows = [];
+  ['A', 'B'].forEach(letter => {
+    PLAN[letter].exercises.forEach(ex => {
+      const last = lastWeightOf(ex.id);
+      if (last) rows.push({ name: ex.name, w: last.w, date: last.date });
+    });
+  });
+  if (!rows.length) {
+    wl.innerHTML = '<div class="empty" style="margin-top:8px;"><h3>重量记录为空</h3>' +
+      '<p>在今日训练里展开任意动作，填上本次重量，<br>下次训练时会自动提示你上次的数字。</p></div>';
+  } else {
+    wl.innerHTML = rows.map(r =>
+      '<div class="weight-row"><span class="weight-name">' + esc(r.name) + '</span>' +
+      '<span class="weight-val num">' + esc(r.w) + ' kg</span>' +
+      '<span class="weight-date num">' + esc(r.date) + '</span></div>').join('');
+  }
+}
+$('view-records').addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-goto]');
+  if (el) switchTab('today');
+});
+
+/* ───────────────────────── 组间休息计时 ───────────────────────── */
+let timer = { remain: 0, total: 0, id: null, paused: false };
+function fmtSec(s) { return Math.floor(s / 60) + ':' + pad2(s % 60); }
+function renderTimer() {
+  $('timerNum').textContent = fmtSec(timer.remain);
+  $('timerToggle').textContent = timer.paused ? '继续' : '暂停';
+}
+function stopTimer(silent) {
+  clearInterval(timer.id);
+  timer.id = null; timer.remain = 0; timer.paused = false;
+  $('timer').classList.remove('on');
+  if (!silent) toast('计时器已关闭');
+}
+function startTimer(sec) {
+  clearInterval(timer.id);
+  timer.remain = sec; timer.total = sec; timer.paused = false;
+  $('timer').classList.add('on');
+  $('timerCap').textContent = '组间休息 · 起身活动，调整呼吸';
+  renderTimer();
+  timer.id = setInterval(() => {
+    if (timer.paused) return;
+    timer.remain--;
+    if (timer.remain <= 0) {
+      stopTimer(true);
+      toast('休息结束，开始下一组');
+      buzz([60, 40, 60]);
+      return;
+    }
+    if (timer.remain === 10) $('timerCap').textContent = '还剩 10 秒 · 准备下一组';
+    renderTimer();
+  }, 1000);
+}
+$('timerToggle').addEventListener('click', () => { timer.paused = !timer.paused; renderTimer(); });
+$('timerPlus').addEventListener('click', () => { timer.remain += 30; timer.total = Math.max(timer.total, timer.remain); renderTimer(); });
+$('timerClose').addEventListener('click', () => stopTimer());
+// 顶部连续周芯片点击 = 打开 90 秒组间休息
+$('streakChip').addEventListener('click', () => { startTimer(REST_SECONDS); $('timerCap').textContent = '组间休息 90 秒'; });
+
+/* ───────────────────── 视频弹层与沉浸模式 ───────────────────── */
+let vmKey = null;
+function openVideo(key) {
+  if (!VIDEO_INDEX[key]) return;
+  vmKey = key;
+  const info = VIDEO_INDEX[key];
+  const v = parseVideo(state.videos[key]);
+  $('vmTitle').textContent = info.name;
+  $('vmSub').textContent = v ? '已固定收藏视频 · 内嵌播放' : (isMobile ? '未固定 · 可用 App 搜索或粘贴链接' : '未固定 · 默认搜索');
+  const player = $('vmPlayer');
+  if (v) {
+    player.innerHTML = '<iframe src="' + esc(playerSrc(v)) + '" scrolling="no" frameborder="no" allowfullscreen="true" allow="autoplay; encrypted-media; fullscreen" title="B站视频播放器"></iframe>';
+    $('vmFixDetails').open = false;
+  } else {
+    player.innerHTML = '<div class="vm-empty"><p style="margin:0;">还没有固定这个动作的视频。<br>粘贴你收藏的 B 站链接，即可直接在这里播放。</p></div>';
+    $('vmFixDetails').open = true;
+  }
+  $('vmUrlInput').value = state.videos[key] || '';
+  $('vmApp').href = appHref(key);
+  $('vmApp').hidden = !isMobile;
+  $('vmWeb').href = webHref(key);
+  $('vmWeb').textContent = isMobile ? '网页打开' : '在 B 站打开';
+  $('vmodal').classList.add('on');
+  try { $('vmClose').focus(); } catch (e) {}
+}
+function closeVideo() {
+  $('vmodal').classList.remove('on');
+  $('vmPlayer').innerHTML = '';
+  vmKey = null;
+}
+function applyFixLink() {
+  const url = $('vmUrlInput').value.trim();
+  const errEl = $('vmFixErr');
+  if (url && !/^https?:\/\/\S+$/i.test(url)) { errEl.classList.add('show'); return; }
+  errEl.classList.remove('show');
+  if (!vmKey) return;
+  if (url) state.videos[vmKey] = url; else delete state.videos[vmKey];
+  saveState();
+  renderToday(); renderPlan();
+  openVideo(vmKey);
+  toast(url ? '已固定视频，开始播放' : '已恢复默认搜索');
+}
+document.addEventListener('click', (ev) => {
+  const vid = ev.target.closest('[data-act="video"]');
+  if (vid) { openVideo(vid.dataset.id); return; }
+  if (ev.target.closest('[data-act="vm-close"]')) { closeVideo(); return; }
+  if (ev.target.closest('[data-act="vm-fix"]')) { applyFixLink(); return; }
+});
+document.addEventListener('keydown', (ev) => {
+  if (!$('vmodal').classList.contains('on')) return;
+  if (ev.key === 'Escape') closeVideo();
+  else if (ev.key === 'Enter' && ev.target && ev.target.id === 'vmUrlInput') { ev.preventDefault(); applyFixLink(); }
+});
+
+/* 沉浸模式：全屏 + 屏幕常亮 */
+let wakeLock = null;
+let immersive = false;
+function immersiveUi(on) {
+  immersive = on;
+  $('immersiveBtn').setAttribute('aria-pressed', String(on));
+  $('icoExpand').hidden = on;
+  $('icoShrink').hidden = !on;
+}
+async function setImmersive(on) {
+  immersiveUi(on);
+  if (on) {
+    try {
+      if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+    } catch (e) {}
+    let locked = false;
+    try {
+      if (navigator.wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); locked = true; }
+    } catch (e) {}
+    toast(locked ? '沉浸模式 · 训练期间屏幕不会熄灭' : '沉浸模式已开启');
+  } else {
+    try { if (wakeLock) { wakeLock.release(); } } catch (e) {}
+    wakeLock = null;
+    try { if (document.fullscreenElement) await document.exitFullscreen(); } catch (e) {}
+    toast('已退出沉浸模式');
+  }
+}
+$('immersiveBtn').addEventListener('click', () => setImmersive(!immersive));
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && immersive) {
+    immersiveUi(false);
+    try { if (wakeLock) { wakeLock.release(); } } catch (e) {}
+    wakeLock = null;
+  }
+});
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && immersive && navigator.wakeLock && !wakeLock) {
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+  }
+});
+
+/* ───────────────────────── 标签页切换 ───────────────────────── */
+const TABS = ['today', 'plan', 'records'];
+function switchTab(name) {
+  TABS.forEach(t => {
+    document.getElementById('view-' + t).hidden = (t !== name);
+    document.getElementById('tab-' + t).setAttribute('aria-selected', t === name);
+  });
+  if (name === 'today') renderToday();
+  if (name === 'plan') renderPlan();
+  if (name === 'records') renderRecords();
+  document.querySelector('.view:not([hidden])').scrollTop = 0;
+}
+TABS.forEach(t => {
+  document.getElementById('tab-' + t).addEventListener('click', () => switchTab(t));
+});
+
+/* ───────────────────────── 启动 ───────────────────────── */
+loadState();
+selDay = dayLetterFor(new Date()) || 'A';
+renderToday();
+renderPlan();
+renderRecords();
+
+// PWA：仅在 http(s) 环境下注册离线缓存
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
